@@ -1,0 +1,13 @@
+.DS_Store
+**/.DS_Store
+backend/__pycache__/
+backend/**/*.pyc
+backend/.env
+backend/tennis_exchange.db
+backend/uploads/
+backend/.venv/
+backend/*.egg-info/
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.vite/

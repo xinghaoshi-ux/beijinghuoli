@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+tennis_exchange.db
+uploads/
+.venv/
+*.egg-info/
+.DS_Store
