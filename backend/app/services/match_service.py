@@ -54,7 +54,7 @@ class MatchService:
         source_type: str = "manual",
         upload_batch_id: int | None = None,
     ) -> VersusMatch:
-        item = await self._get_item(data.item_id)
+        item = await self._get_item(data.item_id) if data.item_id else None
         await self._validate_match(data, item)
         winner_team_id = self._winner_team_id(data)
         group_name = data.age_group or data.group_name
@@ -64,6 +64,7 @@ class MatchService:
             court=data.court,
             group_name=group_name,
             item_id=data.item_id,
+            item_name=data.item_name or (item.name if item else None),
             team_a_id=data.team_a_id,
             team_b_id=data.team_b_id,
             team_a_score=data.team_a_score,
@@ -81,7 +82,7 @@ class MatchService:
 
     async def update_match(self, match_id: int, data: VersusMatchCreate) -> VersusMatch:
         match = await self._get_match(match_id)
-        item = await self._get_item(data.item_id)
+        item = await self._get_item(data.item_id) if data.item_id else None
         await self._validate_match(data, item)
         await self.db.execute(
             delete(VersusMatchPlayer).where(VersusMatchPlayer.match_id == match_id)
@@ -91,6 +92,7 @@ class MatchService:
         match.court = data.court
         match.group_name = data.age_group or data.group_name
         match.item_id = data.item_id
+        match.item_name = data.item_name or (item.name if item else None)
         match.team_a_id = data.team_a_id
         match.team_b_id = data.team_b_id
         match.team_a_score = data.team_a_score
@@ -174,7 +176,7 @@ class MatchService:
                 TeamB.c.name.label("team_b_name"),
                 Winner.c.name.label("winner_team_name"),
             )
-            .join(CompetitionItem, CompetitionItem.id == VersusMatch.item_id)
+            .outerjoin(CompetitionItem, CompetitionItem.id == VersusMatch.item_id)
             .join(TeamA, TeamA.c.id == VersusMatch.team_a_id)
             .join(TeamB, TeamB.c.id == VersusMatch.team_b_id)
             .join(Winner, Winner.c.id == VersusMatch.winner_team_id)
@@ -184,6 +186,7 @@ class MatchService:
         match = row[0]
         team_a_players = await self._get_match_players(match.id, "A")
         team_b_players = await self._get_match_players(match.id, "B")
+        item_name = match.item_name or row.item_name
         return {
             "id": match.id,
             "match_date": match.match_date.isoformat() if match.match_date else None,
@@ -192,7 +195,7 @@ class MatchService:
             "group_name": match.group_name,
             "age_group": match.group_name,
             "item_id": match.item_id,
-            "item_name": row.item_name,
+            "item_name": item_name,
             "team_a_id": match.team_a_id,
             "team_a_name": row.team_a_name,
             "team_b_id": match.team_b_id,
@@ -506,36 +509,41 @@ class MatchService:
             end = date(start.year, start.month + 1, 1)
         return start, end
 
-    async def _validate_match(self, data: VersusMatchCreate, item: CompetitionItem) -> None:
+    async def _validate_match(self, data: VersusMatchCreate, item: CompetitionItem | None) -> None:
         if data.team_a_id == data.team_b_id:
             raise ValidationAppError("对阵球队不能相同", "MATCH_TEAM_DUPLICATED")
         await self._ensure_team(data.team_a_id)
         await self._ensure_team(data.team_b_id)
         self._winner_team_id(data)
-        if len(data.team_a_player_ids) != item.player_count:
+        player_count = item.player_count if item else 1
+        a_players = data.team_a_player_ids or []
+        b_players = data.team_b_player_ids or []
+        if item and len(a_players) != player_count:
             raise ValidationAppError(
                 "A 队球员人数与项目人数不匹配",
                 "MATCH_TEAM_A_PLAYER_COUNT_INVALID",
             )
-        if len(data.team_b_player_ids) != item.player_count:
+        if item and len(b_players) != player_count:
             raise ValidationAppError(
                 "B 队球员人数与项目人数不匹配",
                 "MATCH_TEAM_B_PLAYER_COUNT_INVALID",
             )
-        all_player_ids = data.team_a_player_ids + data.team_b_player_ids
-        if len(all_player_ids) != len(set(all_player_ids)):
+        all_player_ids = a_players + b_players
+        if all_player_ids and len(all_player_ids) != len(set(all_player_ids)):
             raise ConflictError("同一场比赛球员不能重复", "MATCH_PLAYER_DUPLICATED")
-        await self._validate_side_players(data.team_a_player_ids, data.team_a_id)
-        await self._validate_side_players(data.team_b_player_ids, data.team_b_id)
+        if a_players:
+            await self._validate_side_players(a_players, data.team_a_id)
+        if b_players:
+            await self._validate_side_players(b_players, data.team_b_id)
 
     async def _save_players(self, match_id: int, data: VersusMatchCreate) -> None:
-        for player_id in data.team_a_player_ids:
+        for player_id in (data.team_a_player_ids or []):
             self.db.add(
                 VersusMatchPlayer(
                     match_id=match_id, team_id=data.team_a_id, player_id=player_id, side="A"
                 )
             )
-        for player_id in data.team_b_player_ids:
+        for player_id in (data.team_b_player_ids or []):
             self.db.add(
                 VersusMatchPlayer(
                     match_id=match_id, team_id=data.team_b_id, player_id=player_id, side="B"

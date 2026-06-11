@@ -114,8 +114,8 @@ export type MatchResult = {
   court: string | null;
   group_name: string | null;
   age_group?: string | null;
-  item_id: number;
-  item_name: string;
+  item_id?: number | null;
+  item_name?: string | null;
   team_a_id: number;
   team_a_name: string;
   team_b_id: number;
@@ -134,7 +134,8 @@ export type MatchResult = {
 };
 
 export type ResultPayload = {
-  item_id: number;
+  item_id?: number | null;
+  item_name?: string | null;
   match_date?: string | null;
   sequence_no?: number | null;
   court?: string | null;

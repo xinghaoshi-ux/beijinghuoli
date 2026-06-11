@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -27,7 +27,8 @@ export function ResultForm({
 }) {
   const firstItem = items[0];
   const [v, setV] = useState<ResultFormValue>({
-    item_id: initial?.item_id ?? firstItem?.id ?? 0,
+    item_id: initial?.item_id ?? firstItem?.id ?? null,
+    item_name: initial?.item_name ?? null,
     match_date: initial?.match_date ?? todayInputValue(),
     sequence_no: initial?.sequence_no ?? null,
     court: initial?.court ?? "",
@@ -43,14 +44,10 @@ export function ResultForm({
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const currentItem = useMemo(
-    () => items.find(item => item.id === v.item_id) ?? firstItem,
-    [firstItem, items, v.item_id],
-  );
-  const playerCount = currentItem?.player_count ?? 1;
+  const playerCount = items.find(item => item.id === v.item_id)?.player_count ?? 1;
 
   useEffect(() => {
-    if (items.length > 0 && !items.some(item => item.id === v.item_id)) {
+    if (v.item_id && items.length > 0 && !items.some(item => item.id === v.item_id)) {
       setV(s => ({ ...s, item_id: items[0].id }));
     }
   }, [items, v.item_id]);
@@ -99,14 +96,6 @@ export function ResultForm({
       setSubmitting(false);
     }
   };
-
-  if (items.length === 0) {
-    return (
-      <div className="rounded-[14px] border border-[#E0D9F0] bg-[#F7F4FD] p-4 text-[#6B6586]" style={{ fontSize: "13px" }}>
-        未开发：当前前端没有比赛项目管理页面。请先通过后端 API 或数据库配置比赛项目后，再录入成绩。
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">

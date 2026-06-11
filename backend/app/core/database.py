@@ -53,3 +53,5 @@ def _ensure_compatible_schema(sync_conn) -> None:
     columns = {column["name"] for column in inspector.get_columns("versus_matches")}
     if "match_date" not in columns:
         sync_conn.execute(text("ALTER TABLE versus_matches ADD COLUMN match_date DATE"))
+    if "item_name" not in columns:
+        sync_conn.execute(text("ALTER TABLE versus_matches ADD COLUMN item_name VARCHAR(100)"))

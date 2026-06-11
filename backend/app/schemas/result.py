@@ -61,8 +61,8 @@ class VersusMatchOut(BaseModel):
     court: str | None = None
     group_name: str | None = None
     age_group: str | None = None
-    item_id: int
-    item_name: str
+    item_id: int | None = None
+    item_name: str | None = None
     team_a_id: int
     team_a_name: str
     team_b_id: int
@@ -86,11 +86,12 @@ class VersusMatchCreate(BaseModel):
     court: str | None = None
     group_name: str | None = None
     age_group: str | None = None
-    item_id: int
+    item_id: int | None = None
+    item_name: str | None = None
     team_a_id: int
     team_b_id: int
-    team_a_player_ids: list[int]
-    team_b_player_ids: list[int]
+    team_a_player_ids: list[int] | None = None
+    team_b_player_ids: list[int] | None = None
     team_a_score: int = Field(ge=0)
     team_b_score: int = Field(ge=0)
     note: str | None = None
