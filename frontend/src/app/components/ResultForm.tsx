@@ -3,6 +3,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import type { Item, Player, ResultPayload, Team } from "../types/api";
 
@@ -77,6 +78,18 @@ export function ResultForm({
   };
 
   const submit = async () => {
+    if (v.team_a_id === v.team_b_id) {
+      toast.error("A 队和 B 阵不能相同");
+      return;
+    }
+    if (v.team_a_score === v.team_b_score) {
+      toast.error("比分不能为平局");
+      return;
+    }
+    if (!v.team_a_id || !v.team_b_id) {
+      toast.error("请选择双方球队");
+      return;
+    }
     setSubmitting(true);
     try {
       await onSubmit({
@@ -92,6 +105,8 @@ export function ResultForm({
         team_a_score: Number(v.team_a_score) || 0,
         team_b_score: Number(v.team_b_score) || 0,
       });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSubmitting(false);
     }

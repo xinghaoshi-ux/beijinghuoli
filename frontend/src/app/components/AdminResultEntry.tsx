@@ -93,9 +93,13 @@ export function AdminResultEntry({ onSaved }: { onSaved: () => void }) {
             players={players}
             teams={teams}
             onSubmit={async (v) => {
-              await createResult(v);
-              toast.success("成绩已保存");
-              onSaved();
+              try {
+                await createResult(v);
+                toast.success("成绩已保存");
+                onSaved();
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "保存失败");
+              }
             }}
           />
         </div>
